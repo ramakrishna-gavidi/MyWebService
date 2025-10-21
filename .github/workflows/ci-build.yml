@@ -32,7 +32,7 @@ jobs:
 
     # Step 5: Run unit tests
     - name: Run tests
-      run: dotnet test MyWebService.Tests/MyWebService.Tests.csproj --no-build --verbosity normal
+      run: dotnet test MyWebService.Tests/MyWebService.Tests.csproj --configuration Release --no-build --verbosity normal
 
     # Step 6: Publish web project
     - name: Publish Web API

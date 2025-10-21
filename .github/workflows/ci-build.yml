@@ -1,61 +1,46 @@
-name: CI - Restore, Build, Test & Publish
+name: CI - Build, Test & Publish
 
 on:
 #  push:
-#   branches: [ "main" ]
+#    branches: [ "main" ]
 #  pull_request:
-#   branches: [ "main" ]
+#    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-  build:
+  build-test-publish:
     runs-on: ubuntu-latest
 
-    env:
-      solution: '**/*.sln'
-      buildPlatform: 'Any CPU'
-      buildConfiguration: 'Release'
-      testProjects: '**/*[Tt]ests/*.csproj'
-
     steps:
-    # Step 1: Checkout the source code
+    # Step 1: Checkout repository code
     - name: Checkout source
       uses: actions/checkout@v3
 
-    # Step 2: Install specific NuGet version (like NuGetToolInstaller@0)
-    - name: Install NuGet 6.12.1
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y nuget
-
-    # Step 3: Authenticate    
-    - name: Setup NuGet authentication
-      run: echo "NuGet authentication step (if required for private feeds)"
-
-    # Step 4: Setup .NET SDK (like UseDotNet@2)
-    - name: Setup .NET SDK 8.x
+    # Step 2: Setup .NET SDK
+    - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '8.x'
+        dotnet-version: '8.0.x'  # or your specific version (e.g., 7.0.x)
 
-    # Step 5: Restore NuGet packages
-    - name: Restore NuGet packages
-      run: dotnet restore ${{ env.solution }} --verbosity detailed
+    # Step 3: Restore dependencies
+    - name: Restore dependencies
+      run: dotnet restore MyWebService.sln
 
-    # Step 6: Build solution
+    # Step 4: Build solution
     - name: Build solution
-      run: dotnet build ${{ env.solution }} --configuration ${{ env.buildConfiguration }} --no-restore
+      run: dotnet build MyWebService.sln --configuration Release --no-restore
 
-    # Step 7: Run tests
-    - name: Run unit tests
-      run: dotnet test ${{ env.testProjects }} --configuration ${{ env.buildConfiguration }} --no-build --verbosity normal
+    # Step 5: Run unit tests
+    - name: Run tests
+      run: dotnet test MyWebService.Tests/MyWebService.Tests.csproj --no-build --verbosity normal
 
-    # Step 8: Publish project (adjust project path as needed)
-    - name: Publish project
-      run: dotnet publish MyWebService.Api/MyWebService.Api.csproj --configuration ${{ env.buildConfiguration }} --output ./publish --verbosity detailed
+    # Step 6: Publish web project
+    - name: Publish Web API
+      run: dotnet publish MyWebService.Api/MyWebService.Api.csproj -c Release -o ./publish
 
-    # Step 9: Upload published artifacts (like PublishBuildArtifacts@1)
+    # Step 7: Upload publish artifacts (optional, but very useful)
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: MyWebService_Artifacts
+        name: MyWebService_Publish
         path: ./publish

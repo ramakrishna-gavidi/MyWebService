@@ -1,0 +1,61 @@
+name: CI - Restore, Build, Test & Publish
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      solution: '**/*.sln'
+      buildPlatform: 'Any CPU'
+      buildConfiguration: 'Release'
+      testProjects: '**/*[Tt]ests/*.csproj'
+
+    steps:
+    # Step 1: Checkout the source code
+    - name: Checkout source
+      uses: actions/checkout@v3
+
+    # Step 2: Install specific NuGet version (like NuGetToolInstaller@0)
+    - name: Install NuGet 6.12.1
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y nuget
+
+    # Step 3: Authenticate    
+    - name: Setup NuGet authentication
+      run: echo "NuGet authentication step (if required for private feeds)"
+
+    # Step 4: Setup .NET SDK (like UseDotNet@2)
+    - name: Setup .NET SDK 8.x
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.x'
+
+    # Step 5: Restore NuGet packages
+    - name: Restore NuGet packages
+      run: dotnet restore ${{ env.solution }} --verbosity detailed
+
+    # Step 6: Build solution
+    - name: Build solution
+      run: dotnet build ${{ env.solution }} --configuration ${{ env.buildConfiguration }} --no-restore
+
+    # Step 7: Run tests
+    - name: Run unit tests
+      run: dotnet test ${{ env.testProjects }} --configuration ${{ env.buildConfiguration }} --no-build --verbosity normal
+
+    # Step 8: Publish project (adjust project path as needed)
+    - name: Publish project
+      run: dotnet publish MyWebService.Api/MyWebService.Api.csproj --configuration ${{ env.buildConfiguration }} --output ./publish --verbosity detailed
+
+    # Step 9: Upload published artifacts (like PublishBuildArtifacts@1)
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: MyWebService_Artifacts
+        path: ./publish
